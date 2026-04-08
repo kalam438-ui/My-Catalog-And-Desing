@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "MenuItem": {
+      "title": "MenuItem",
+      "description": "A single dish or item on the menu.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the item." },
+        "name": { "type": "string", "description": "Name of the dish." },
+        "price": { "type": "string", "description": "Price of the dish." },
+        "description": { "type": "string", "description": "Description of the dish." },
+        "image": { "type": "string", "description": "URL of the dish image." },
+        "category": { "type": "string", "description": "Category the dish belongs to." },
+        "isBestSeller": { "type": "boolean", "description": "Whether the dish is a best seller." }
+      },
+      "required": ["id", "name", "price", "category"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "A menu category.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the category." },
+        "name": { "type": "string", "description": "Name of the category." },
+        "image": { "type": "string", "description": "URL of the category image." }
+      },
+      "required": ["id", "name"]
+    },
+    "HeaderInfo": {
+      "title": "HeaderInfo",
+      "description": "General restaurant information.",
+      "type": "object",
+      "properties": {
+        "restaurant": { "type": "string", "description": "Name of the restaurant." },
+        "title": { "type": "string", "description": "Title of the menu." },
+        "whatsapp": { "type": "string", "description": "WhatsApp contact number." }
+      },
+      "required": ["restaurant", "title"]
+    }
+  },
+  "firestore": {
+    "/menu_items": {
+      "schema": "MenuItem",
+      "description": "Collection of all menu items."
+    },
+    "/categories": {
+      "schema": "Category",
+      "description": "Collection of menu categories."
+    },
+    "/header": {
+      "schema": "HeaderInfo",
+      "description": "Document containing restaurant header information."
+    }
+  }
+}

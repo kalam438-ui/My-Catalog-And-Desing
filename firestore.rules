@@ -1,0 +1,144 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: menu_items
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required, max 100 chars)
+    //   - price: string (required, max 20 chars)
+    //   - description: string (optional, max 500 chars)
+    //   - image: string (optional, max 2000 chars)
+    //   - category: string (required, must exist in categories)
+    //   - isBestSeller: bool (optional)
+    //   - authorUid: string (required)
+    //
+    // Collection: categories
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required, max 50 chars)
+    //   - authorUid: string (required)
+    //
+    // Collection: header
+    // Document ID: 'main'
+    // Fields:
+    //   - restaurant: string (required, max 100 chars)
+    //   - title: string (required, max 100 chars)
+    //   - whatsapp: string (optional, max 20 chars)
+    //   - authorUid: string (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.authorUid;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "KALAM438@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidString(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+        (request.resource.data[field] is string &&
+          request.resource.data[field].size() >= minLen &&
+          request.resource.data[field].size() <= maxLen);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidMenuItem(data) {
+      return hasRequiredFields(['id', 'name', 'price', 'category', 'authorUid']) &&
+        hasOnlyAllowedFields(['id', 'name', 'price', 'description', 'image', 'category', 'isBestSeller', 'authorUid']) &&
+        isValidString('id', 1, 50) &&
+        isValidString('name', 1, 100) &&
+        isValidString('price', 1, 20) &&
+        isValidOptionalString('description', 0, 500) &&
+        isValidOptionalString('image', 0, 1500000) && // Increased to allow base64 images
+        isValidString('category', 1, 50) &&
+        (!( 'isBestSeller' in data) || data.isBestSeller is bool) &&
+        data.authorUid == request.auth.uid;
+    }
+
+    function isValidCategory(data) {
+      return hasRequiredFields(['id', 'name', 'authorUid']) &&
+        hasOnlyAllowedFields(['id', 'name', 'description', 'image', 'authorUid']) &&
+        isValidString('id', 1, 100) &&
+        isValidString('name', 1, 50) &&
+        isValidOptionalString('description', 0, 500) &&
+        isValidOptionalString('image', 0, 1500000) && // Added image field and allowed base64
+        data.authorUid == request.auth.uid;
+    }
+
+    function isValidHeader(data) {
+      return hasRequiredFields(['restaurant', 'title', 'authorUid']) &&
+        hasOnlyAllowedFields(['restaurant', 'title', 'whatsapp', 'authorUid']) &&
+        isValidString('restaurant', 1, 100) &&
+        isValidString('title', 1, 100) &&
+        isValidOptionalString('whatsapp', 0, 20) &&
+        data.authorUid == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    
+    // Public read for menu data, but only owner or admin can write
+    match /menu_items/{itemId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidMenuItem(request.resource.data);
+      allow update: if isAuthenticated() && (isDocOwner() || isAdmin()) && isValidMenuItem(request.resource.data);
+      allow delete: if isAuthenticated() && (isDocOwner() || isAdmin());
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidCategory(request.resource.data);
+      allow update: if isAuthenticated() && (isDocOwner() || isAdmin()) && isValidCategory(request.resource.data);
+      allow delete: if isAuthenticated() && (isDocOwner() || isAdmin());
+    }
+
+    match /header/{headerId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidHeader(request.resource.data);
+      allow update: if isAuthenticated() && (isDocOwner() || isAdmin()) && isValidHeader(request.resource.data);
+      allow delete: if isAuthenticated() && (isDocOwner() || isAdmin());
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}
