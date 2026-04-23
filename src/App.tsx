@@ -3,16 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Trash2, Upload, UtensilsCrossed, Check, ChevronUp, ChevronDown, Edit2, MessageCircle, Globe, Sparkles, Loader2, X, Bot, Send, LogIn, LogOut } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Plus, Trash2, Upload, UtensilsCrossed, Check, ChevronUp, ChevronDown, Edit2, MessageCircle, Globe, Sparkles, Loader2, X, Bot, Send, LogIn, LogOut, ExternalLink, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from "@google/genai";
 import Markdown from 'react-markdown';
 import { auth, db, googleProvider, handleFirestoreError, OperationType } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { collection, doc, setDoc, deleteDoc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, query, where, orderBy, updateDoc } from 'firebase/firestore';
 
-type Language = 'en' | 'ar' | 'bn' | 'es' | 'fr' | 'hi' | 'zh';
+type Language = 'en' | 'ar' | 'bn';
 
 const translations = {
   en: {
@@ -71,6 +71,7 @@ const translations = {
     suggestPrice: 'What is the cheapest dish?',
     removeImage: 'Remove Image',
     fillAllFields: 'Please fill all required fields',
+    searchPlaceholder: 'Search dishes, descriptions or categories...',
   },
   ar: {
     restaurantName: 'اسم المطعم',
@@ -128,6 +129,7 @@ const translations = {
     suggestPrice: 'ما هو أرخص طبق؟',
     removeImage: 'إزالة الصورة',
     fillAllFields: 'يرجى ملء جميع الحقول المطلوبة',
+    searchPlaceholder: 'بحث في الأطباق أو الوصف أو الفئات...',
   },
   bn: {
     restaurantName: 'রেস্তোরাঁর নাম',
@@ -185,234 +187,7 @@ const translations = {
     suggestPrice: 'সবচেয়ে সস্তা ডিশ কোনটি?',
     removeImage: 'ছবি সরান',
     fillAllFields: 'অনুগ্রহ করে সব প্রয়োজনীয় ক্ষেত্র পূরণ করুন',
-  },
-  es: {
-    restaurantName: 'Nombre del Restaurante',
-    menuTitle: 'Título del Menú',
-    addDish: 'Añadir Plato',
-    addCategory: 'Categoría',
-    editHeader: 'Editar Encabezado',
-    shareMenu: 'Compartir Menú',
-    shareWhatsApp: 'WhatsApp',
-    cancel: 'Cancelar',
-    save: 'Guardar',
-    update: 'Actualizar',
-    category: 'Categoría',
-    dishName: 'Nombre del Plato',
-    price: 'Precio',
-    description: 'Descripción',
-    bestSeller: '¿Más Vendido?',
-    uploadImage: 'Click para subir imagen',
-    emptyMenu: 'Tu menú está vacío',
-    startAdding: 'Empieza a añadir platos',
-    linkCopied: '¡Enlace copiado al portapapeles!',
-    selectCategory: 'Selecciona una categoría',
-    editCategory: 'Editar Categoría',
-    addNewCategory: 'Añadir Nueva Categoría',
-    editingHeader: 'Editando Encabezado del Menú',
-    editingDish: 'Editando Plato',
-    addNewDish: 'Añadir Nuevo Plato al Menú',
-    bestSellerBadge: 'Más Vendido',
-    fineDining: 'Alta Cocina',
-    est: 'Est. 1994',
-    placeholderDish: 'ej. Pollo a la Mantequilla',
-    placeholderDesc: 'Describe brevemente el plato...',
-    placeholderCat: 'ej. Postres',
-    order: 'Pedir',
-    whatsappNumber: 'Número de WhatsApp (con código de país)',
-    translateMenu: 'Traducir Contenido',
-    translating: 'Traduciendo...',
-    translateSuccess: '¡Menú traducido con éxito!',
-    translateError: 'Error en la traducción. Inténtalo de nuevo.',
-    currencySymbol: '€',
-    dishImage: 'Imagen del Plato',
-    moveUp: 'Subir',
-    moveDown: 'Bajar',
-    editCategoryName: 'Editar Nombre de Categoría',
-    removeCategory: 'Eliminar Categoría',
-    edit: 'Editar',
-    delete: 'Eliminar',
-    aiAssistant: 'Asistente AI',
-    online: 'En línea',
-    chatPlaceholder: 'Pregunta sobre nuestro menú...',
-    chatWelcome: '¿Cómo puedo ayudarte hoy?',
-    shareOnWhatsApp: 'Compartir en WhatsApp',
-    suggestBestSeller: '¿Cuál es el plato más vendido?',
-    suggestVegetarian: '¿Hay opciones vegetarianas?',
-    suggestPrice: '¿Cuál es el plato más barato?',
-    removeImage: 'Eliminar Imagen',
-    fillAllFields: 'Por favor, rellena todos los campos obligatorios',
-  },
-  fr: {
-    restaurantName: 'Nom du Restaurant',
-    menuTitle: 'Titre du Menu',
-    addDish: 'Ajouter un Plat',
-    addCategory: 'Catégorie',
-    editHeader: 'Modifier l\'En-tête',
-    shareMenu: 'Partager le Menu',
-    shareWhatsApp: 'WhatsApp',
-    cancel: 'Annuler',
-    save: 'Enregistrer',
-    update: 'Mettre à jour',
-    category: 'Catégorie',
-    dishName: 'Nom du Plat',
-    price: 'Prix',
-    description: 'Description',
-    bestSeller: 'Meilleure Vente ?',
-    uploadImage: 'Cliquez pour télécharger une image',
-    emptyMenu: 'Votre menu est vide',
-    startAdding: 'Commencez à ajouter des plats',
-    linkCopied: 'Lien copié dans le presse-papiers !',
-    selectCategory: 'Sélectionnez une catégorie',
-    editCategory: 'Modifier la Catégorie',
-    addNewCategory: 'Ajouter une Nouvelle Catégorie',
-    editingHeader: 'Modification de l\'En-tête du Menu',
-    editingDish: 'Modification du Plat',
-    addNewDish: 'Ajouter un Nouveau Plat au Menu',
-    bestSellerBadge: 'Meilleure Vente',
-    fineDining: 'Gastronomie',
-    est: 'Depuis 1994',
-    placeholderDish: 'ex. Poulet au Beurre',
-    placeholderDesc: 'Décrivez brièvement le plat...',
-    placeholderCat: 'ex. Desserts',
-    order: 'Commander',
-    whatsappNumber: 'Numéro WhatsApp (avec code pays)',
-    translateMenu: 'Traduire le Contenu',
-    translating: 'Traduction...',
-    translateSuccess: 'Menu traduit avec succès !',
-    translateError: 'Échec de la traduction. Veuillez réessayer.',
-    currencySymbol: '€',
-    dishImage: 'Image du Plat',
-    moveUp: 'Monter',
-    moveDown: 'Descendre',
-    editCategoryName: 'Modifier le Nom de la Catégorie',
-    removeCategory: 'Supprimer la Catégorie',
-    edit: 'Modifier',
-    delete: 'Supprimer',
-    aiAssistant: 'Assistant IA',
-    online: 'En ligne',
-    chatPlaceholder: 'Posez des questions sur notre menu...',
-    chatWelcome: 'Comment puis-je vous aider aujourd\'hui ?',
-    shareOnWhatsApp: 'Partager sur WhatsApp',
-    suggestBestSeller: 'Quel est votre plat le plus vendu ?',
-    suggestVegetarian: 'Y a-t-il des options végétariennes ?',
-    suggestPrice: 'Quel est le plat le moins cher ?',
-    removeImage: 'Supprimer l\'image',
-    fillAllFields: 'Veuillez remplir tous les champs obligatoires',
-  },
-  hi: {
-    restaurantName: 'रेस्तरां का नाम',
-    menuTitle: 'मेनू शीर्षक',
-    addDish: 'डिश जोड़ें',
-    addCategory: 'श्रेणी',
-    editHeader: 'हेडर संपादित करें',
-    shareMenu: 'मेनू साझा करें',
-    shareWhatsApp: 'व्हाट्सएप',
-    cancel: 'रद्द करें',
-    save: 'सहेजें',
-    update: 'अपडेट करें',
-    category: 'श्रेणी',
-    dishName: 'डिश का नाम',
-    price: 'कीमत',
-    description: 'विवरण',
-    bestSeller: 'बेस्ट सेलर?',
-    uploadImage: 'छवि अपलोड करने के लिए क्लिक करें',
-    emptyMenu: 'आपका मेनू खाली है',
-    startAdding: 'डिश जोड़ना शुरू करें',
-    linkCopied: 'लिंक क्लिपबोर्ड पर कॉपी किया गया!',
-    selectCategory: 'एक श्रेणी चुनें',
-    editCategory: 'श्रेणी संपादित करें',
-    addNewCategory: 'नई श्रेणी जोड़ें',
-    editingHeader: 'मेनू हेडर संपादित किया जा रहा है',
-    editingDish: 'डिश संपादित की जा रही है',
-    addNewDish: 'मेनू में नई डिश जोड़ें',
-    bestSellerBadge: 'बेस्ट सेलर',
-    fineDining: 'फाइन डाइनिंग',
-    est: 'स्थापना 1994',
-    placeholderDish: 'जैसे: बटर चिकन',
-    placeholderDesc: 'डिश का संक्षेप में वर्णन करें...',
-    placeholderCat: 'जैसे: डेसर्ट',
-    order: 'ऑर्डर करें',
-    whatsappNumber: 'व्हाट्सएप नंबर (देश कोड के साथ)',
-    translateMenu: 'सामग्री का अनुवाद करें',
-    translating: 'अनुवाद हो रहा है...',
-    translateSuccess: 'मेनू का सफलतापूर्वक अनुवाद किया गया!',
-    translateError: 'अनुवाद विफल रहा। कृपया पुनः प्रयास करें।',
-    currencySymbol: '₹',
-    dishImage: 'डिश की छवि',
-    moveUp: 'ऊपर ले जाएं',
-    moveDown: 'नीचे ले जाएं',
-    editCategoryName: 'श्रेणी का नाम संपादित करें',
-    removeCategory: 'श्रेणी हटाएं',
-    edit: 'संपादित करें',
-    delete: 'हटाएं',
-    aiAssistant: 'एआई सहायक',
-    online: 'ऑनलाइन',
-    chatPlaceholder: 'हमारे मेनू के बारे में पूछें...',
-    chatWelcome: 'मैं आज आपकी कैसे मदद कर सकता हूँ?',
-    shareOnWhatsApp: 'व्हाट्सएप पर साझा करें',
-    suggestBestSeller: 'आपका सबसे लोकप्रिय व्यंजन कौन सा है?',
-    suggestVegetarian: 'क्या कोई शाकाहारी विकल्प हैं?',
-    suggestPrice: 'सबसे सस्ता व्यंजन कौन सा है?',
-    removeImage: 'छवि निकालें',
-    fillAllFields: 'कृपया सभी आवश्यक फ़ील्ड भरें',
-  },
-  zh: {
-    restaurantName: '餐厅名称',
-    menuTitle: '菜单标题',
-    addDish: '添加菜品',
-    addCategory: '类别',
-    editHeader: '编辑页眉',
-    shareMenu: '分享菜单',
-    shareWhatsApp: 'WhatsApp',
-    cancel: '取消',
-    save: '保存',
-    update: '更新',
-    category: '类别',
-    dishName: '菜名',
-    price: '价格',
-    description: '描述',
-    bestSeller: '畅销？',
-    uploadImage: '点击上传图片',
-    emptyMenu: '您的菜单是空的',
-    startAdding: '开始添加菜品',
-    linkCopied: '链接已复制到剪贴板！',
-    selectCategory: '选择一个类别',
-    editCategory: '编辑类别',
-    addNewCategory: '添加新类别',
-    editingHeader: '正在编辑菜单页眉',
-    editingDish: '正在编辑菜品',
-    addNewDish: '向菜单添加新菜品',
-    bestSellerBadge: '畅销',
-    fineDining: '高级餐饮',
-    est: '始于 1994',
-    placeholderDish: '例如：黄油鸡',
-    placeholderDesc: '简要描述菜品...',
-    placeholderCat: '例如：甜点',
-    order: '下单',
-    whatsappNumber: 'WhatsApp 号码（带国家代码）',
-    translateMenu: '翻译内容',
-    translating: '正在翻译...',
-    translateSuccess: '菜单翻译成功！',
-    translateError: '翻译失败。请重试。',
-    currencySymbol: '¥',
-    dishImage: '菜品图片',
-    moveUp: '上移',
-    moveDown: '下移',
-    editCategoryName: '编辑类别名称',
-    removeCategory: '删除类别',
-    edit: '编辑',
-    delete: '删除',
-    aiAssistant: '人工智能助手',
-    online: '在线',
-    chatPlaceholder: '询问我们的菜单...',
-    chatWelcome: '今天我能为您提供什么帮助？',
-    shareOnWhatsApp: '在 WhatsApp 上分享',
-    suggestBestSeller: '你们最畅销的菜是什么？',
-    suggestVegetarian: '有素食选择吗？',
-    suggestPrice: '最便宜的菜是什么？',
-    removeImage: '移除图片',
-    fillAllFields: '请填写所有必填字段',
+    searchPlaceholder: 'ডিশ, বর্ণনা বা বিভাগ অনুসন্ধান করুন...',
   }
 };
 interface MenuItem {
@@ -438,6 +213,9 @@ interface ChatMessage {
 }
 
 export default function App() {
+  const queryParams = new URLSearchParams(window.location.search);
+  const isViewOnly = queryParams.get('mode') === 'view';
+
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isLoadingItems, setIsLoadingItems] = useState(true);
@@ -456,9 +234,10 @@ export default function App() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const t = translations[language];
-  const isNonLatin = ['ar', 'bn', 'hi', 'zh'].includes(language);
+  const isNonLatin = ['ar', 'bn'].includes(language);
 
   const [headerInfo, setHeaderInfo] = useState({
     restaurant: 'LARANA & CO',
@@ -477,7 +256,8 @@ export default function App() {
 
   // Firebase Sync
   useEffect(() => {
-    if (!isAuthReady) return;
+    // For view-only mode, we can start syncing immediately without waiting for auth
+    if (!isAuthReady && !isViewOnly) return;
 
     const unsubItems = onSnapshot(collection(db, 'menu_items'), (snapshot) => {
       const newItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MenuItem));
@@ -508,7 +288,7 @@ export default function App() {
       unsubCategories();
       unsubHeader();
     };
-  }, [isAuthReady]);
+  }, [isAuthReady, isViewOnly]);
 
   useEffect(() => {
     localStorage.setItem('menu_language', language);
@@ -570,9 +350,6 @@ export default function App() {
   }, [isChatOpen]);
   
   // Detect view-only mode from URL
-  const queryParams = new URLSearchParams(window.location.search);
-  const isViewOnly = queryParams.get('mode') === 'view';
-
   const [newItem, setNewItem] = useState<Partial<MenuItem>>({
     name: '',
     price: '',
@@ -825,17 +602,21 @@ export default function App() {
     if (isViewOnly || !user || !categoryId) return;
     setIsSaving(true);
     try {
+      const categoryToDelete = categories.find(c => c.id === categoryId);
       await deleteDoc(doc(db, 'categories', categoryId));
       
-      // Also delete items in this category or at least update them?
-      // For now, just delete the category. The items will still exist but won't show up under this category.
+      // Update items that were in this category to be uncategorized
+      if (categoryToDelete) {
+        const itemsToUpdate = items.filter(item => item.category === categoryToDelete.name);
+        for (const item of itemsToUpdate) {
+          await updateDoc(doc(db, 'menu_items', item.id), { category: '' });
+        }
+      }
       
       setConfirmDelete(null);
-      
-      // If we were editing this category, reset the form
       if (editingCategoryIndex !== null && categories[editingCategoryIndex]?.id === categoryId) {
         setEditingCategoryIndex(null);
-        setNewCategory({ name: '', image: '' });
+        setNewCategory({ name: '', image: '', description: '' });
         setIsAddingCategory(false);
         setIsAdding(false);
       }
@@ -915,6 +696,12 @@ export default function App() {
     navigator.clipboard.writeText(url.toString());
     setToastMessage(t.linkCopied);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const openShareLink = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('mode', 'view');
+    window.open(url.toString(), '_blank');
   };
 
   const translateMenuContent = async () => {
@@ -1007,15 +794,18 @@ export default function App() {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const context = `You are an AI assistant for ${headerInfo.restaurant}. 
-      Here is our menu:
+      Current Menu Status:
       ${items.map(item => `- ${item.name} (${t.currencySymbol}${item.price}): ${item.description} [Category: ${item.category}]${item.isBestSeller ? ' (Best Seller)' : ''}`).join('\n')}
       
-      Help the customer with recommendations, questions about ingredients, or general inquiries about the restaurant. 
-      Keep your answers concise and friendly. If they want to order, tell them to use the WhatsApp button on the dish.
-      Current language: ${language}. Please respond in ${language}.`;
+      Your Goal:
+      1. Provide helpful recommendations based on the menu above.
+      2. Answer questions about ingredients or restaurant details.
+      3. Keep responses warm, professional, and concise.
+      4. If a user wants to order, guide them to use the WhatsApp button on each dish.
+      5. Current language: ${language}. Always respond in ${language}.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: [
           { role: 'user', parts: [{ text: context }] },
           ...chatMessages.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
@@ -1023,7 +813,7 @@ export default function App() {
         ],
       });
 
-      const modelMessage: ChatMessage = { role: 'model', text: response.text || 'Sorry, I could not process that.' };
+      const modelMessage: ChatMessage = { role: 'model', text: response.text || 'I am sorry, I could not process that request.' };
       setChatMessages(prev => [...prev, modelMessage]);
     } catch (error) {
       console.error("Chat error:", error);
@@ -1033,9 +823,37 @@ export default function App() {
     }
   };
 
-  const bestSellers = items.filter(item => item.isBestSeller);
+  const bestSellers = useMemo(() => {
+    const queryStr = searchQuery.toLowerCase().trim();
+    return items.filter(item => 
+      item.isBestSeller && 
+      (!queryStr || 
+       item.name.toLowerCase().includes(queryStr) || 
+       item.description.toLowerCase().includes(queryStr) ||
+       item.category.toLowerCase().includes(queryStr))
+    );
+  }, [items, searchQuery]);
 
-  if (!isAuthReady || (isLoading && items.length === 0)) {
+  // Group items by category for faster rendering
+  const itemsByCategory = useMemo(() => {
+    const grouped: Record<string, MenuItem[]> = {};
+    const queryStr = searchQuery.toLowerCase().trim();
+    
+    items.forEach(item => {
+      const matchesQuery = !queryStr || 
+        item.name.toLowerCase().includes(queryStr) || 
+        item.description.toLowerCase().includes(queryStr) ||
+        item.category.toLowerCase().includes(queryStr);
+
+      if (matchesQuery) {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
+      }
+    });
+    return grouped;
+  }, [items, searchQuery]);
+
+  if ((!isAuthReady && !isViewOnly) || (isLoading && items.length === 0)) {
     return (
       <div className="min-h-screen bg-menu-bg flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-12 h-12 text-menu-accent animate-spin" />
@@ -1046,10 +864,19 @@ export default function App() {
 
   return (
     <div 
-      className={`min-h-screen bg-menu-bg p-4 md:p-12 selection:bg-menu-accent selection:text-menu-bg ${isNonLatin ? 'font-sans' : ''}`}
+      className={`min-h-screen ${isViewOnly ? 'share-mode' : 'bg-menu-bg text-white'} p-4 md:p-12 selection:bg-menu-accent selection:text-menu-bg ${isNonLatin ? 'font-sans' : ''} relative`}
       dir={language === 'ar' ? 'rtl' : 'ltr'}
     >
-      <div className="max-w-6xl mx-auto">
+      {/* Background Decorative Elements */}
+      {!isViewOnly && (
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-[url('https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-[0.07] scale-110 blur-xl"></div>
+          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px]"></div>
+          <div className="absolute top-[60%] -right-[10%] w-[50%] h-[50%] bg-white/5 rounded-full blur-[150px]"></div>
+        </div>
+      )}
+
+      <div className="max-w-6xl mx-auto relative z-10">
         
         {/* Language Switcher */}
         <div className="flex flex-wrap justify-end mb-8 gap-2">
@@ -1063,14 +890,14 @@ export default function App() {
               {isTranslating ? t.translating : t.translateMenu}
             </button>
           )}
-          {(['en', 'ar', 'bn', 'es', 'fr', 'hi', 'zh'] as Language[]).map((lang) => (
+          {(['en', 'ar', 'bn'] as Language[]).map((lang) => (
             <button
               key={lang}
               onClick={() => setLanguage(lang)}
               className={`px-3 py-1 text-[10px] uppercase tracking-widest font-bold border rounded-sm transition-all ${
                 language === lang 
-                  ? 'bg-menu-accent text-menu-bg border-menu-accent' 
-                  : 'border-[#3d5a54] text-menu-accent hover:border-menu-accent'
+                  ? 'bg-white text-black border-white shadow-[0_0_10px_rgba(255,255,255,0.2)]' 
+                  : 'border-white/20 text-white/60 hover:text-white hover:border-white'
               }`}
             >
               {lang.toUpperCase()}
@@ -1081,7 +908,7 @@ export default function App() {
         {/* Header Section */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
           <div className={`relative group ${!isViewOnly ? 'cursor-pointer' : ''}`} onClick={toggleHeaderEdit}>
-            <p className="text-[10px] tracking-[0.4em] uppercase font-bold opacity-80 mb-2">
+            <p className="text-[16px] sm:text-[22px] tracking-[0.4em] uppercase font-black opacity-100 mb-2">
               {headerInfo.restaurant}
             </p>
             <h1 className={`menu-title text-6xl sm:text-8xl md:text-[12rem] flex flex-col ${isNonLatin ? 'font-sans tracking-normal' : ''}`}>
@@ -1100,13 +927,13 @@ export default function App() {
               <>
                 <button 
                   onClick={() => { setIsAdding(true); setIsAddingCategory(true); setIsEditingHeader(false); setEditingId(null); }}
-                  className="flex items-center justify-center gap-2 border border-menu-accent text-menu-accent px-6 py-3 font-bold uppercase tracking-widest text-xs hover:bg-menu-accent hover:text-menu-bg transition-all rounded-sm"
+                  className="flex items-center justify-center gap-2 border border-white text-white px-6 py-3 font-bold uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all rounded-sm"
                 >
                   <Plus size={16} /> {t.addCategory}
                 </button>
                 <button 
                   onClick={toggleForm}
-                  className="flex items-center justify-center gap-2 bg-menu-accent text-menu-bg px-6 py-3 font-bold uppercase tracking-widest text-xs hover:bg-white transition-colors rounded-sm"
+                  className="flex items-center justify-center gap-2 bg-white text-black px-6 py-3 font-bold uppercase tracking-widest text-xs hover:bg-black hover:text-white border border-white transition-all rounded-sm"
                 >
                   {isAdding && !isEditingHeader && !isAddingCategory ? t.cancel : <><Plus size={16} /> {t.addDish}</>}
                 </button>
@@ -1117,7 +944,7 @@ export default function App() {
                 user ? (
                   <button 
                     onClick={handleLogout}
-                    className="flex items-center justify-center gap-2 border border-menu-accent text-menu-accent px-4 py-3 font-bold uppercase tracking-widest text-xs hover:bg-menu-accent hover:text-menu-bg transition-all rounded-sm"
+                    className="flex items-center justify-center gap-2 border border-white text-white px-4 py-3 font-bold uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all rounded-sm"
                     title="Logout"
                   >
                     <LogOut size={16} />
@@ -1125,7 +952,7 @@ export default function App() {
                 ) : (
                   <button 
                     onClick={handleLogin}
-                    className="flex items-center justify-center gap-2 border border-menu-accent text-menu-accent px-4 py-3 font-bold uppercase tracking-widest text-xs hover:bg-menu-accent hover:text-menu-bg transition-all rounded-sm"
+                    className="flex items-center justify-center gap-2 border border-white text-white px-4 py-3 font-bold uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all rounded-sm"
                     title="Login"
                   >
                     <LogIn size={16} />
@@ -1134,10 +961,19 @@ export default function App() {
               )}
               <button 
                 onClick={copyShareLink}
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 font-bold uppercase tracking-widest text-xs transition-all rounded-sm ${isViewOnly ? 'bg-menu-accent text-menu-bg' : 'border border-menu-accent text-menu-accent hover:bg-menu-accent hover:text-menu-bg'}`}
+                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 font-bold uppercase tracking-widest text-xs transition-all rounded-sm ${isViewOnly ? 'bg-white text-black' : 'border border-white text-white hover:bg-white hover:text-black'}`}
               >
                 {t.shareMenu}
               </button>
+              {!isViewOnly && (
+                <button 
+                  onClick={openShareLink}
+                  className="flex items-center justify-center gap-2 border border-white text-white px-4 py-3 font-bold uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all rounded-sm"
+                  title="Open in new tab"
+                >
+                  <ExternalLink size={16} />
+                </button>
+              )}
               <button 
                 onClick={shareOnWhatsApp}
                 className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 py-3 font-bold uppercase tracking-widest text-xs hover:opacity-90 transition-all rounded-sm"
@@ -1150,6 +986,28 @@ export default function App() {
           </div>
         </header>
 
+        {/* Search Bar */}
+        <div className="mb-8 max-w-2xl mx-auto w-full px-4 sm:px-0">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-white transition-colors" size={20} />
+            <input 
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t.searchPlaceholder}
+              className="w-full bg-white/5 border border-white/10 rounded-full py-5 pl-14 pr-14 text-white text-lg focus:outline-none focus:border-white focus:bg-white/10 transition-all shadow-2xl placeholder:text-white/30"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors p-1"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Category Quick Nav */}
         {categories.length > 0 && (
           <nav className="sticky top-0 z-40 bg-menu-bg/90 backdrop-blur-md border-b border-menu-accent/10 mb-12 -mx-4 px-4 py-4 overflow-x-auto no-scrollbar scroll-smooth">
@@ -1158,7 +1016,7 @@ export default function App() {
                 <a 
                   key={cat.id} 
                   href={`#${cat.name.toLowerCase().replace(/\s+/g, '-')}`}
-                  className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] font-bold text-white/40 hover:text-menu-accent transition-colors whitespace-nowrap"
+                  className="text-[16px] sm:text-[22px] uppercase tracking-[0.3em] font-black text-white/50 hover:text-white hover:border-b-4 hover:border-white transition-all whitespace-nowrap pb-2"
                 >
                   {cat.name}
                 </a>
@@ -1170,17 +1028,17 @@ export default function App() {
         {/* Featured Section */}
         {bestSellers.length > 0 && (
           <section className="mb-20">
-            <div className="flex items-center gap-4 mb-10">
-              <Sparkles className="text-menu-accent" size={20} />
-              <h2 className="text-xl font-bold uppercase tracking-[0.2em]">{t.bestSellerBadge}</h2>
-              <div className="flex-1 h-[1px] bg-menu-accent/20"></div>
-            </div>
+              <div className="flex items-center gap-4 mb-10">
+                <Sparkles className="text-white" size={20} />
+                <h2 className="text-xl font-bold uppercase tracking-[0.2em]">{t.bestSellerBadge}</h2>
+                <div className="flex-1 h-[1px] bg-white/20"></div>
+              </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {bestSellers.map(item => (
                 <motion.div 
                   key={item.id}
                   layoutId={`featured-${item.id}`}
-                  className="group relative bg-[#1a3a34] rounded-sm overflow-hidden border border-[#3d5a54] hover:border-menu-accent transition-all duration-500"
+                  className="group relative bg-[#111] rounded-sm overflow-hidden border border-white/10 hover:border-white transition-all duration-500 shadow-xl"
                 >
                   <div className="aspect-[16/9] overflow-hidden relative">
                     <img 
@@ -1265,7 +1123,7 @@ export default function App() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mb-16 bg-[#1a3a34] p-8 rounded-sm border border-[#3d5a54]"
+              className="mb-16 bg-black/5 p-8 rounded-sm border border-black/10"
             >
               <h2 className="text-[10px] uppercase tracking-[0.3em] font-bold mb-8 opacity-40">
                 {isEditingHeader ? t.editingHeader : isAddingCategory ? (editingCategoryIndex !== null ? t.editCategory : t.addNewCategory) : editingId ? t.editingDish : t.addNewDish}
@@ -1279,7 +1137,7 @@ export default function App() {
                       type="text" 
                       value={headerInfo.restaurant}
                       onChange={(e) => setHeaderInfo({ ...headerInfo, restaurant: e.target.value })}
-                      className="w-full bg-menu-bg border border-[#3d5a54] p-3 focus:outline-none focus:border-menu-accent transition-colors"
+                      className="w-full bg-white/5 border border-white/20 p-3 focus:outline-none focus:border-white transition-colors text-white font-medium shadow-xl placeholder:text-white/20"
                     />
                   </div>
                   <div>
@@ -1288,7 +1146,7 @@ export default function App() {
                       type="text" 
                       value={headerInfo.title}
                       onChange={(e) => setHeaderInfo({ ...headerInfo, title: e.target.value })}
-                      className="w-full bg-menu-bg border border-[#3d5a54] p-3 focus:outline-none focus:border-menu-accent transition-colors"
+                      className="w-full bg-white/5 border border-white/20 p-3 focus:outline-none focus:border-white transition-colors text-white font-medium shadow-xl placeholder:text-white/20"
                     />
                   </div>
                   <div>
@@ -1298,7 +1156,7 @@ export default function App() {
                       value={headerInfo.whatsapp}
                       onChange={(e) => setHeaderInfo({ ...headerInfo, whatsapp: e.target.value })}
                       placeholder="+1234567890"
-                      className="w-full bg-menu-bg border border-[#3d5a54] p-3 focus:outline-none focus:border-menu-accent transition-colors"
+                      className="w-full bg-white/5 border border-white/20 p-3 shadow-xl focus:outline-none focus:border-white transition-colors text-white font-medium placeholder:text-white/20"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -1320,7 +1178,7 @@ export default function App() {
                       value={newCategory.name}
                       onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
                       placeholder={t.placeholderCat}
-                      className="w-full bg-menu-bg border border-[#3d5a54] p-3 focus:outline-none focus:border-menu-accent transition-colors"
+                      className="w-full bg-white/5 border border-white/20 p-3 shadow-xl focus:outline-none focus:border-white transition-colors text-white font-medium placeholder:text-white/20"
                     />
                   </div>
                   
@@ -1331,7 +1189,7 @@ export default function App() {
                       onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
                       placeholder={t.placeholderDesc}
                       rows={2}
-                      className="w-full bg-menu-bg border border-[#3d5a54] p-3 focus:outline-none focus:border-menu-accent transition-colors resize-none"
+                      className="w-full bg-white/5 border border-white/20 p-3 shadow-xl focus:outline-none focus:border-white transition-colors resize-none text-white font-medium placeholder:text-white/20"
                     />
                   </div>
                   
@@ -1340,7 +1198,7 @@ export default function App() {
                     <div className="flex gap-4 items-start">
                       <div 
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex-1 border-2 border-dashed border-[#3d5a54] p-8 text-center cursor-pointer hover:border-menu-accent transition-all group relative overflow-hidden min-h-[120px] flex flex-col items-center justify-center"
+                        className="flex-1 border-2 border-dashed border-black/20 p-8 text-center cursor-pointer hover:border-menu-accent transition-all group relative overflow-hidden min-h-[120px] flex flex-col items-center justify-center"
                       >
                         {newCategory.image ? (
                           <img src={newCategory.image} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-20 transition-opacity" />
@@ -1397,7 +1255,7 @@ export default function App() {
                       <select 
                         value={newItem.category}
                         onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                        className="w-full bg-menu-bg border border-[#3d5a54] p-3 focus:outline-none focus:border-menu-accent transition-colors mb-4 appearance-none"
+                        className="w-full bg-white border border-black/20 p-3 shadow-inner focus:outline-none focus:border-menu-accent transition-colors mb-4 appearance-none text-menu-accent font-medium"
                       >
                         <option value="" disabled>{t.selectCategory}</option>
                         {categories.map(cat => (
@@ -1412,25 +1270,25 @@ export default function App() {
                         value={newItem.name}
                         onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                         placeholder={t.placeholderDish}
-                        className="w-full bg-menu-bg border border-[#3d5a54] p-3 focus:outline-none focus:border-menu-accent transition-colors"
+                        className="w-full bg-white/5 border border-white/20 p-3 shadow-xl focus:outline-none focus:border-white transition-colors text-white font-medium placeholder:text-white/20"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-[10px] uppercase tracking-widest font-bold mb-2 opacity-60">{t.price} ({t.currencySymbol})</label>
-                        <input 
-                          type="text" 
-                          value={newItem.price}
-                          onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
-                          placeholder="14.00"
-                          className="w-full bg-menu-bg border border-[#3d5a54] p-3 focus:outline-none focus:border-menu-accent transition-colors"
-                        />
+                          <input 
+                            type="text" 
+                            value={newItem.price}
+                            onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
+                            placeholder="14.00"
+                            className="w-full bg-white/5 border border-white/20 p-3 shadow-xl focus:outline-none focus:border-white transition-colors text-white font-medium placeholder:text-white/20"
+                          />
                       </div>
                       <div className="flex items-end pb-3">
                         <label className="flex items-center gap-2 cursor-pointer group">
                           <div 
                             onClick={() => setNewItem({ ...newItem, isBestSeller: !newItem.isBestSeller })}
-                            className={`w-6 h-6 border border-[#3d5a54] flex items-center justify-center transition-colors ${newItem.isBestSeller ? 'bg-menu-accent border-menu-accent' : 'group-hover:border-menu-accent'}`}
+                            className={`w-6 h-6 border border-white/30 flex items-center justify-center transition-colors ${newItem.isBestSeller ? 'bg-white border-white' : 'group-hover:border-white'}`}
                           >
                             {newItem.isBestSeller && <Check size={14} className="text-menu-bg" />}
                           </div>
@@ -1445,7 +1303,7 @@ export default function App() {
                         onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                         placeholder={t.placeholderDesc}
                         rows={3}
-                        className="w-full bg-menu-bg border border-[#3d5a54] p-3 focus:outline-none focus:border-menu-accent transition-colors resize-none"
+                        className="w-full bg-white/5 border border-white/20 p-3 shadow-xl focus:outline-none focus:border-white transition-colors resize-none text-white font-medium placeholder:text-white/20"
                       />
                     </div>
                   </div>
@@ -1455,7 +1313,7 @@ export default function App() {
                     <div className="flex-1 relative group">
                       <div 
                         onClick={() => fileInputRef.current?.click()}
-                        className="h-full min-h-[200px] border-2 border-dashed border-[#3d5a54] hover:border-menu-accent transition-colors cursor-pointer flex flex-col items-center justify-center p-8 text-center relative overflow-hidden"
+                        className="h-full min-h-[200px] border-2 border-dashed border-black/20 hover:border-menu-accent transition-colors cursor-pointer flex flex-col items-center justify-center p-8 text-center relative overflow-hidden"
                       >
                         {newItem.image ? (
                           <>
@@ -1502,32 +1360,34 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Menu Grid Grouped by Category */}
-        <div className="space-y-24">
-          {categories.length === 0 && !isLoading ? (
-            <div className="py-20 flex flex-col items-center justify-center opacity-40 border border-dashed border-[#3d5a54]">
-              <UtensilsCrossed size={48} className="mb-4" />
-              <p className="uppercase tracking-widest text-xs font-bold">{t.emptyMenu}</p>
-              {!isViewOnly && user && (
-                <button 
-                  onClick={() => { setIsAdding(true); setIsAddingCategory(true); }}
-                  className="mt-4 text-[10px] underline underline-offset-4 hover:text-white transition-colors"
-                >
-                  {t.addNewCategory}
-                </button>
-              )}
-            </div>
-          ) : categories.map((category, catIndex) => {
-            const catItems = items.filter(item => item.category === category.name);
-            
-            // Only hide empty categories for customers (view-only mode)
-            if (catItems.length === 0 && (isViewOnly || !user)) return null;
+          {/* Menu Grid Grouped by Category */}
+          <div className="space-y-24">
+            {categories.length === 0 && !isLoading ? (
+              <div className="py-20 flex flex-col items-center justify-center opacity-40 border border-dashed border-black/10">
+                <UtensilsCrossed size={48} className="mb-4" />
+                <p className="uppercase tracking-widest text-xs font-bold">{t.emptyMenu}</p>
+                {!isViewOnly && user && (
+                  <button 
+                    onClick={() => { setIsAdding(true); setIsAddingCategory(true); }}
+                    className="mt-4 text-[10px] underline underline-offset-4 hover:text-white transition-colors"
+                  >
+                    {t.addNewCategory}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                {categories.map((category, catIndex) => {
+                  const catItems = itemsByCategory[category.name] || [];
+                  
+                  // Only hide empty categories for customers (view-only mode)
+                  if (catItems.length === 0 && (isViewOnly || !user)) return null;
 
-            return (
-              <div key={category.id} id={category.name.toLowerCase().replace(/\s+/g, '-')} className="space-y-12 scroll-mt-32">
+                  return (
+                    <div key={category.id} id={category.name.toLowerCase().replace(/\s+/g, '-')} className="space-y-12 scroll-mt-32">
                 <div className="space-y-6">
                   {category.image && (
-                    <div className="relative w-full h-48 md:h-64 rounded-sm overflow-hidden border border-[#3d5a54]">
+                    <div className="relative w-full h-48 md:h-64 rounded-sm overflow-hidden border border-black/10">
                       <img 
                         src={category.image} 
                         alt={category.name} 
@@ -1552,12 +1412,12 @@ export default function App() {
                   <div className="flex items-center justify-between gap-4 group/cat">
                     <div className="flex items-center gap-4 flex-1">
                       <div className="space-y-1">
-                        <h2 className={`text-4xl italic opacity-80 ${isNonLatin ? 'font-sans not-italic' : 'font-serif'}`}>{category.name}</h2>
+                        <h2 className={`text-[32px] font-bold border-2 border-white bg-black text-white px-6 py-3 rounded-sm shadow-[0_0_20px_rgba(255,255,255,0.1)] inline-block ${isNonLatin ? 'font-sans' : 'font-serif'} tracking-tight cursor-default transition-transform active:scale-95 uppercase`}>{category.name}</h2>
                         {category.description && (
-                          <p className="text-xs opacity-40 uppercase tracking-widest font-medium">{category.description}</p>
+                          <p className="text-xs opacity-40 uppercase tracking-widest font-medium mt-2">{category.description}</p>
                         )}
                       </div>
-                      <div className="h-[1px] flex-1 bg-[#3d5a54] opacity-30"></div>
+                      <div className="h-[1px] flex-1 bg-white/20"></div>
                     </div>
                     {!isViewOnly && user && (
                       <div className="flex items-center gap-1">
@@ -1605,17 +1465,17 @@ export default function App() {
                       key={item.id} 
                       className="relative group"
                     >
-                      <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-[#1a3a34]/30 flex items-center justify-center cursor-zoom-in mb-6" onClick={() => item.image && setZoomedImage(item.image)}>
+                      <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-white/5 flex items-center justify-center cursor-zoom-in mb-6" onClick={() => item.image && setZoomedImage(item.image)}>
                         {item.image ? (
                           <img 
                             src={item.image} 
                             alt={item.name} 
                             loading="lazy"
-                            className="w-full h-full object-cover grayscale-[0.2] hover:grayscale-0 transition-all duration-700"
+                            className="w-full h-full object-cover grayscale-[0.2] hover:grayscale-0 transition-all duration-1000"
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <UtensilsCrossed size={48} className="opacity-10" />
+                          <UtensilsCrossed size={48} className="opacity-20 text-white" />
                         )}
                         {item.isBestSeller && (
                           <div className="best-seller-badge">{t.bestSellerBadge}</div>
@@ -1667,10 +1527,90 @@ export default function App() {
               </div>
             );
           })}
-        </div>
+
+          {/* Uncategorized Items Section */}
+          {itemsByCategory[''] && itemsByCategory[''].length > 0 && (
+            <div key="uncategorized" className="space-y-12 scroll-mt-32 pt-12 border-t border-white/10">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between gap-4 group/cat">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="space-y-1">
+                      <h2 className={`text-[32px] font-bold border-2 border-white bg-black text-white px-6 py-3 rounded-sm shadow-[0_0_20px_rgba(255,255,255,0.1)] inline-block ${isNonLatin ? 'font-sans' : 'font-serif'} tracking-tight cursor-default transition-transform active:scale-95 uppercase`}>
+                        {language === 'ar' ? 'أطباق أخرى' : language === 'bn' ? 'অন্যান্য খাবার' : 'Other Dishes'}
+                      </h2>
+                    </div>
+                    <div className="h-[1px] flex-1 bg-white/10"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-20">
+                {itemsByCategory[''].map((item, index) => (
+                  <motion.div 
+                    layout
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    key={item.id} 
+                    className="relative group"
+                  >
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-white/5 flex items-center justify-center cursor-zoom-in mb-6" onClick={() => item.image && setZoomedImage(item.image)}>
+                      {item.image ? (
+                        <img 
+                          src={item.image} 
+                          alt={item.name} 
+                          loading="lazy"
+                          className="w-full h-full object-cover grayscale-[0.2] hover:grayscale-0 transition-all duration-1000"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <UtensilsCrossed size={48} className="opacity-20 text-white" />
+                      )}
+                      {item.isBestSeller && (
+                        <div className="best-seller-badge">{t.bestSellerBadge}</div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-4">
+                        <div className="menu-item-number shrink-0">{index + 1}</div>
+                        <div>
+                          <h3 className={`text-2xl mb-1 ${isNonLatin ? 'font-sans font-bold' : 'font-serif'}`}>{item.name}</h3>
+                          <p className="text-[11px] opacity-60 leading-relaxed max-w-[280px]">{item.description}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-xl ${isNonLatin ? 'font-sans font-bold' : 'font-serif'}`}>{t.currencySymbol}{item.price}</span>
+                        {!isViewOnly && user && (
+                          <div className="flex gap-2 justify-end mt-2">
+                            <button 
+                              onClick={() => editItem(item)}
+                              className="text-menu-accent p-1 hover:bg-menu-accent/10 rounded-full"
+                              title={t.edit}
+                            >
+                              <Plus size={14} className="rotate-45" />
+                            </button>
+                            <button 
+                              onClick={() => setConfirmDelete({ id: item.id, type: 'item', name: item.name })}
+                              className="text-red-400 p-1 hover:bg-red-400/10 rounded-full"
+                              title={t.delete}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
 
         {/* Footer */}
-        <footer className="mt-32 pt-8 border-t border-[#3d5a54] flex justify-between items-center opacity-40">
+        <footer className="mt-32 pt-8 border-t border-white/10 flex justify-between items-center opacity-40">
           <p className="text-[10px] uppercase tracking-widest font-bold">© 2026 {headerInfo.restaurant}</p>
           <div className="flex gap-4 text-[10px] uppercase tracking-widest font-bold">
             <span>{t.fineDining}</span>
@@ -1722,7 +1662,7 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-[#1a3a34] border border-red-500/50 p-6 rounded-sm shadow-2xl max-w-[280px] sm:max-w-xs text-center mb-4"
+              className="bg-white border border-red-500/50 p-6 rounded-sm shadow-2xl max-w-[280px] sm:max-w-xs text-center mb-4"
             >
               <p className="text-[10px] uppercase tracking-widest font-bold mb-4">
                 {confirmDelete.type === 'item' 
@@ -1756,9 +1696,9 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.9, y: 20, transformOrigin: 'bottom right' }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-[calc(100vw-2rem)] sm:w-96 h-[500px] max-h-[calc(100vh-10rem)] bg-menu-bg border border-[#3d5a54] rounded-sm shadow-2xl flex flex-col overflow-hidden mb-4"
+              className="w-[calc(100vw-2rem)] sm:w-96 h-[500px] max-h-[calc(100vh-10rem)] bg-white border border-black/10 rounded-sm shadow-2xl flex flex-col overflow-hidden mb-4"
             >
-              <div className="p-4 border-b border-[#3d5a54] bg-[#1a3a34] flex justify-between items-center">
+              <div className="p-4 border-b border-black/10 bg-menu-accent flex justify-between items-center text-white">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-menu-accent flex items-center justify-center text-menu-bg">
                     <Bot size={18} />
@@ -1787,8 +1727,8 @@ export default function App() {
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] p-3 rounded-sm text-xs leading-relaxed ${
                       msg.role === 'user' 
-                        ? 'bg-menu-accent text-menu-bg font-bold' 
-                        : 'bg-[#1a3a34] text-white border border-[#3d5a54]'
+                        ? 'bg-white text-black font-bold shadow-xl border border-white/20' 
+                        : 'bg-white/5 text-white border border-white/10'
                     }`}>
                       <Markdown>{msg.text}</Markdown>
                     </div>
@@ -1796,7 +1736,7 @@ export default function App() {
                 ))}
                 {isChatLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-[#1a3a34] p-3 rounded-sm border border-[#3d5a54]">
+                    <div className="bg-black/5 p-3 rounded-sm border border-black/10">
                       <div className="flex gap-1">
                         <div className="w-1 h-1 bg-menu-accent rounded-full animate-bounce"></div>
                         <div className="w-1 h-1 bg-menu-accent rounded-full animate-bounce delay-75"></div>
@@ -1814,7 +1754,7 @@ export default function App() {
                     <button
                       key={suggestion}
                       onClick={() => handleSendMessage(suggestion)}
-                      className="whitespace-nowrap bg-[#1a3a34] border border-[#3d5a54] text-[9px] uppercase tracking-widest px-3 py-1.5 hover:border-menu-accent transition-colors rounded-full opacity-70 hover:opacity-100"
+                      className="whitespace-nowrap bg-white/5 border border-white/10 text-[9px] uppercase tracking-widest px-3 py-1.5 hover:border-menu-accent transition-colors rounded-full text-white"
                     >
                       {suggestion}
                     </button>
@@ -1822,14 +1762,14 @@ export default function App() {
                 </div>
               )}
 
-              <div className="p-4 border-t border-[#3d5a54] bg-[#1a3a34]">
+              <div className="p-4 border-t border-black/10 bg-black/5">
                 <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex gap-2">
                   <input 
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     placeholder={t.chatPlaceholder}
-                    className="flex-1 bg-menu-bg border border-[#3d5a54] p-2 text-xs focus:outline-none focus:border-menu-accent transition-colors"
+                    className="flex-1 bg-white border border-black/10 p-2 text-xs focus:outline-none focus:border-menu-accent transition-colors text-black"
                   />
                   <button 
                     type="submit"
@@ -1848,7 +1788,7 @@ export default function App() {
         <div className="flex flex-col gap-3 sm:gap-4">
           <button 
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="w-12 h-12 sm:w-14 sm:h-14 bg-[#1a3a34] border border-[#3d5a54] text-menu-accent rounded-full shadow-2xl flex items-center justify-center hover:bg-menu-accent hover:text-menu-bg transition-all group"
+            className="w-12 h-12 sm:w-14 sm:h-14 bg-menu-accent text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-black transition-all group"
             title="Back to Top"
           >
             <ChevronUp size={24} className="group-hover:-translate-y-1 transition-transform" />
@@ -1864,12 +1804,12 @@ export default function App() {
             </button>
           )}
 
-          <button
-            onClick={() => setIsChatOpen(!isChatOpen)}
-            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-2xl flex items-center justify-center transition-all relative ${
-              isChatOpen ? 'bg-menu-accent text-menu-bg' : 'bg-[#1a3a34] border border-[#3d5a54] text-menu-accent hover:border-menu-accent'
-            }`}
-          >
+            <button
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-2xl flex items-center justify-center transition-all relative ${
+                isChatOpen ? 'bg-menu-accent text-white' : 'bg-menu-accent text-white shadow-md hover:bg-black'
+              }`}
+            >
             {isChatOpen ? <X size={24} /> : <Bot size={24} />}
             {!isChatOpen && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-menu-accent rounded-full border-2 border-menu-bg animate-bounce"></span>

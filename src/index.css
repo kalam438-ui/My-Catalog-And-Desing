@@ -4,24 +4,42 @@
 @theme {
   --font-serif: "Playfair Display", serif;
   --font-sans: "Inter", sans-serif;
-  --color-menu-bg: #0a2a24;
-  --color-menu-accent: #f5f2ed;
+  --color-menu-bg: #000000;
+  --color-menu-accent: #ffffff;
 }
 
 body {
-  @apply bg-menu-bg text-menu-accent font-sans;
+  @apply bg-menu-bg text-white font-sans min-h-screen relative;
+  background-attachment: fixed;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.02) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.02) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, transparent 0%, #000 100%);
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.6;
 }
 
 .menu-title {
-  @apply font-serif leading-none tracking-tighter;
+  @apply font-serif leading-none tracking-tighter text-white uppercase;
 }
 
 .menu-item-number {
-  @apply flex items-center justify-center w-8 h-8 rounded-full bg-[#3d5a54] text-white font-bold text-sm;
+  @apply flex items-center justify-center w-8 h-8 rounded-full bg-white text-black font-bold text-sm;
 }
 
 .best-seller-badge {
-  @apply absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#e6b450] text-[#0a2a24] px-4 py-1 text-[10px] font-bold uppercase tracking-widest rounded-sm shadow-lg;
+  @apply absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white text-black px-4 py-1 text-[10px] font-bold uppercase tracking-widest rounded-sm shadow-xl;
 }
 
 /* Custom scrollbar for a cleaner look */
@@ -29,12 +47,156 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a2a24;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3d5a54;
+  background: #333333;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4d6a64;
+  background: #555555;
+}
+
+/* Share mode styles (Light Grey background) */
+.share-mode {
+  background-color: #f3f4f6 !important;
+  color: #000000 !important;
+  background-image: none !important;
+}
+
+.share-mode::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.share-mode::-webkit-scrollbar-thumb {
+  background: #cccccc;
+}
+
+.share-mode::before {
+  display: none !important;
+}
+
+.share-mode .menu-title {
+  color: #000000 !important;
+}
+
+.share-mode .menu-item-number {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.share-mode .best-seller-badge {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.share-mode input {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+.share-mode .bg-black {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.share-mode .text-white {
+  color: #000000 !important;
+}
+
+.share-mode .text-white\/60,
+.share-mode .text-white\/40,
+.share-mode .opacity-60,
+.share-mode .opacity-40 {
+  color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.share-mode .border-white\/10,
+.share-mode .border-white\/20,
+.share-mode .border-white {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.share-mode .bg-white\/5,
+.share-mode .bg-black\/5 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.share-mode .bg-white\/10,
+.share-mode .bg-black\/10 {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.share-mode .border-white\/10,
+.share-mode .border-white\/20,
+.share-mode .border-white,
+.share-mode .border-black\/10,
+.share-mode .border-black\/20 {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.share-mode .bg-black.text-white {
+  color: #ffffff !important; /* Keep category text white since bg is black */
+}
+
+.share-mode .bg-black.text-white .border-2 {
+  border-color: #ffffff !important;
+}
+
+.share-mode .text-white\/30,
+.share-mode .text-white\/40,
+.share-mode .text-white\/60,
+.share-mode .text-white {
+  color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.share-mode .bg-black {
+  background-color: #000000 !important;
+}
+
+.share-mode .bg-menu-accent {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.share-mode .text-menu-accent {
+  color: #000000 !important;
+}
+
+.share-mode .border-menu-accent {
+  border-color: #000000 !important;
+}
+
+.share-mode nav {
+  background-color: rgba(243, 244, 246, 0.9) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.share-mode nav a {
+  color: rgba(0, 0, 0, 0.4) !important;
+}
+
+.share-mode nav a:hover {
+  color: #000000 !important;
+  border-bottom-color: #000000 !important;
+}
+
+.share-mode [class*="bg-black/40"] {
+  background-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.share-mode .bg-white\/5,
+.share-mode .bg-black\/5 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.share-mode .bg-white {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Fix AI Chat user message bubble in share mode */
+.share-mode .bg-white.text-black.font-bold.shadow-xl {
+  background-color: #000000 !important;
+  color: #ffffff !important;
 }
