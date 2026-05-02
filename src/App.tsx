@@ -1387,14 +1387,19 @@ export default function App() {
                     <div key={category.id} id={category.name.toLowerCase().replace(/\s+/g, '-')} className="space-y-12 scroll-mt-32">
                 <div className="space-y-6">
                   {category.image && (
-                    <div className="relative w-full h-48 md:h-64 rounded-sm overflow-hidden border border-black/10">
+                    <div className="relative w-full h-48 md:h-64 rounded-sm overflow-hidden border border-black/10 group/img shadow-xl">
                       <img 
                         src={category.image} 
                         alt={category.name} 
                         loading="lazy" 
-                        className="w-full h-full object-cover opacity-60 hover:opacity-80 transition-opacity cursor-zoom-in" 
+                        className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 cursor-zoom-in" 
                         onClick={() => setZoomedImage(category.image || null)}
                       />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity pointer-events-none">
+                        <div className="bg-black/40 backdrop-blur-sm text-white text-[10px] uppercase tracking-widest font-bold px-4 py-2 rounded-full border border-white/20">
+                          {language === 'ar' ? 'تذكير' : language === 'bn' ? 'জুম করুন' : 'Click to Zoom'}
+                        </div>
+                      </div>
                       {!isViewOnly && user && (
                         <button 
                           onClick={() => {
@@ -1465,15 +1470,22 @@ export default function App() {
                       key={item.id} 
                       className="relative group"
                     >
-                      <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-white/5 flex items-center justify-center cursor-zoom-in mb-6" onClick={() => item.image && setZoomedImage(item.image)}>
+                      <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-white/5 flex items-center justify-center cursor-zoom-in mb-6 group/img shadow-lg" onClick={() => item.image && setZoomedImage(item.image)}>
                         {item.image ? (
-                          <img 
-                            src={item.image} 
-                            alt={item.name} 
-                            loading="lazy"
-                            className="w-full h-full object-cover grayscale-[0.2] hover:grayscale-0 transition-all duration-1000"
-                            referrerPolicy="no-referrer"
-                          />
+                          <>
+                            <img 
+                              src={item.image} 
+                              alt={item.name} 
+                              loading="lazy"
+                              className="w-full h-full object-cover grayscale-[0.2] group-hover/img:grayscale-0 group-hover/img:scale-110 transition-all duration-1000"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity pointer-events-none">
+                              <div className="bg-black/40 backdrop-blur-sm text-white text-[10px] uppercase tracking-widest font-bold px-4 py-2 rounded-full border border-white/20">
+                                {language === 'ar' ? 'تذكير' : language === 'bn' ? 'জুম করুন' : 'Click to Zoom'}
+                              </div>
+                            </div>
+                          </>
                         ) : (
                           <UtensilsCrossed size={48} className="opacity-20 text-white" />
                         )}
@@ -1553,15 +1565,22 @@ export default function App() {
                     key={item.id} 
                     className="relative group"
                   >
-                    <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-white/5 flex items-center justify-center cursor-zoom-in mb-6" onClick={() => item.image && setZoomedImage(item.image)}>
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-white/5 flex items-center justify-center cursor-zoom-in mb-6 group/img shadow-lg" onClick={() => item.image && setZoomedImage(item.image)}>
                       {item.image ? (
-                        <img 
-                          src={item.image} 
-                          alt={item.name} 
-                          loading="lazy"
-                          className="w-full h-full object-cover grayscale-[0.2] hover:grayscale-0 transition-all duration-1000"
-                          referrerPolicy="no-referrer"
-                        />
+                        <>
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            loading="lazy"
+                            className="w-full h-full object-cover grayscale-[0.2] group-hover/img:grayscale-0 group-hover/img:scale-110 transition-all duration-1000"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity pointer-events-none">
+                            <div className="bg-black/40 backdrop-blur-sm text-white text-[10px] uppercase tracking-widest font-bold px-4 py-2 rounded-full border border-white/20">
+                              {language === 'ar' ? 'تذكير' : language === 'bn' ? 'জুম করুন' : 'Click to Zoom'}
+                            </div>
+                          </div>
+                        </>
                       ) : (
                         <UtensilsCrossed size={48} className="opacity-20 text-white" />
                       )}
@@ -1644,9 +1663,9 @@ export default function App() {
               />
               <button
                 onClick={() => setZoomedImage(null)}
-                className="absolute -top-12 right-0 text-white hover:text-menu-accent transition-colors p-2"
+                className="absolute top-4 right-4 md:-top-12 md:-right-12 text-red-500 hover:text-white transition-colors p-3 bg-black/50 rounded-full backdrop-blur-md border border-white/20"
               >
-                <X size={32} />
+                <X size={28} />
               </button>
             </motion.div>
           </motion.div>
@@ -1698,21 +1717,21 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="w-[calc(100vw-2rem)] sm:w-96 h-[500px] max-h-[calc(100vh-10rem)] bg-white border border-black/10 rounded-sm shadow-2xl flex flex-col overflow-hidden mb-4"
             >
-              <div className="p-4 border-b border-black/10 bg-menu-accent flex justify-between items-center text-white">
+              <div className="p-4 border-b border-black/10 bg-black flex justify-between items-center text-white">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-menu-accent flex items-center justify-center text-menu-bg">
                     <Bot size={18} />
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-menu-accent">{t.aiAssistant}</p>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-white">{t.aiAssistant}</p>
                     <div className="flex items-center gap-1">
                       <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></div>
-                      <p className="text-[8px] uppercase tracking-widest opacity-60">{t.online}</p>
+                      <p className="text-[8px] uppercase tracking-widest opacity-60 text-white">{t.online}</p>
                     </div>
                   </div>
                 </div>
-                <button onClick={() => setIsChatOpen(false)} className="text-white opacity-40 hover:opacity-100 transition-opacity">
-                  <X size={20} />
+                <button onClick={() => setIsChatOpen(false)} className="text-red-500 hover:text-white transition-colors p-1 bg-red-500/10 rounded-full">
+                  <X size={18} />
                 </button>
               </div>
 
